@@ -1,120 +1,124 @@
-import java.io.*;
-import java.util.*;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Stack;
 
 public class Maze {
     private Graph graph;
-    private GraphNode entranceNode;
-    private GraphNode exitNode;
-    private int numCoins;
+    private GraphNode entrance;
+    private GraphNode exit;
+    private int coins;
 
-    // Constructor
     public Maze(String inputFile) throws MazeException {
-		try (BufferedReader br = new BufferedReader(new FileReader(inputFile))) {
-			int scaleFactor = Integer.parseInt(br.readLine().trim()); // S (ignored)
-			int width = Integer.parseInt(br.readLine().trim()); // A
-			int length = Integer.parseInt(br.readLine().trim()); // L
-			numCoins = Integer.parseInt(br.readLine().trim()); // k
-	
-			// Create graph with total nodes
-			graph = new Graph(width * length);
-	
-			String line;
-			int row = 0;
-	
-			// Process maze rows
-			while ((line = br.readLine()) != null) {
-				char[] chars = line.toCharArray();
-	
-				if (chars.length != width) {
-					throw new MazeException("Invalid input format: Row width mismatch.");
-				}
-	
-				for (int col = 0; col < chars.length; col++) {
-					int currentIndex = row * width + col;
-					GraphNode currentNode = graph.getNode(currentIndex);
-	
-					char c = chars[col];
-					if (c == 's') entranceNode = currentNode;
-					if (c == 'x') exitNode = currentNode;
-	
-					// Process horizontal edges (left to right)
-					if (col > 0) {
-						char prevChar = chars[col - 1];
-						processEdge(currentIndex, currentIndex - 1, prevChar);
-					}
-	
-					// Process vertical edges (top to bottom)
-					if (row > 0) {
-						String prevRow = br.readLine();
-						char verticalChar = prevRow.charAt(col);
-						processEdge(currentIndex, currentIndex - width, verticalChar);
-					}
-				}
-				row++;
-			}
-	
-			if (entranceNode == null || exitNode == null) {
-				throw new MazeException("Invalid input format: Missing entrance or exit.");
-			}
-		} catch (IOException | NumberFormatException | GraphException e) {
-			throw new MazeException("Invalid input file format.");
-		}
-	}
-    // Processes and adds edges to the graph
-    private void processEdge(int currentIndex, int neighborIndex, char edgeChar) throws GraphException {
-        GraphNode current = graph.getNode(currentIndex);
-        GraphNode neighbor = graph.getNode(neighborIndex);
-
-        if (edgeChar == 'c') {
-            graph.insertEdge(current, neighbor, 0, "corridor");
-        } else if (Character.isDigit(edgeChar)) {
-            graph.insertEdge(current, neighbor, Character.getNumericValue(edgeChar), "door");
+        try (BufferedReader reader = new BufferedReader(new FileReader(inputFile))) {
+            readInput(reader);
+        } catch (IOException | GraphException e) {
+            throw new MazeException("Error reading input file: " + e.getMessage());
         }
     }
 
-    // Returns the graph
     public Graph getGraph() throws MazeException {
-        if (graph == null) throw new MazeException("Graph is null.");
+        if (graph == null) {
+            throw new MazeException("Graph is not initialized.");
+        }
         return graph;
     }
 
-    // Finds a solution from entrance to exit
-    public Iterator<Integer> solve() {
-        List<Integer> path = new ArrayList<>();
-        if (dfs(entranceNode, path, numCoins)) {
-            return path.iterator();
+    public Iterator<GraphNode> solve() {
+        try {
+            return DFS(coins, entrance, new Stack<>());
+        } catch (GraphException e) {
+            return null;
         }
-        return null; // No solution found
     }
 
-    // DFS helper with coin tracking
-    private boolean dfs(GraphNode current, List<Integer> path, int remainingCoins) {
+    private Iterator<GraphNode> DFS(int remainingCoins, GraphNode current, Stack<GraphNode> path) throws GraphException {
+        path.push(current);
         current.mark(true);
-        path.add(current.getName());
 
-        if (current.equals(exitNode)) return true;
+        if (current.equals(exit)) {
+            return path.iterator(); // Found the exit
+        }
 
-        try {
-            Iterator<GraphEdge> edges = graph.incidentEdges(current);
-            while (edges != null && edges.hasNext()) {
+        Iterator<GraphEdge> edges = graph.incidentEdges(current);
+        if (edges != null) {
+            while (edges.hasNext()) {
                 GraphEdge edge = edges.next();
-                GraphNode neighbor = edge.firstEndpoint().equals(current)
-                        ? edge.secondEndpoint()
-                        : edge.firstEndpoint();
+                GraphNode nextNode = edge.secondEndpoint().equals(current) ? edge.firstEndpoint() : edge.secondEndpoint();
 
-                int cost = edge.getType();
-                if (!neighbor.isMarked() && remainingCoins >= cost) {
-                    if (dfs(neighbor, path, remainingCoins - cost)) {
-                        return true;
+                if (!nextNode.isMarked()) {
+                    int coinsNeeded = edge.getType();
+                    if (coinsNeeded <= remainingCoins) {
+                        Iterator<GraphNode> result = DFS(remainingCoins - coinsNeeded, nextNode, path);
+                        if (result != null) {
+                            return result;
+                        }
                     }
                 }
             }
-        } catch (GraphException e) {
-            e.printStackTrace();
         }
 
-        path.remove(path.size() - 1);
+        path.pop(); // Backtrack
         current.mark(false);
-        return false;
+        return null;
+    }
+
+    private void readInput(BufferedReader reader) throws IOException, GraphException {
+        int scaleFactor = Integer.parseInt(reader.readLine().trim());
+        int width = Integer.parseInt(reader.readLine().trim());
+        int length = Integer.parseInt(reader.readLine().trim());
+        coins = Integer.parseInt(reader.readLine().trim());
+
+        graph = new Graph(width * length);
+
+        String[] horizontal = new String[length * 2 - 1];
+        for (int i = 0; i < length * 2 - 1; i++) {
+            horizontal[i] = reader.readLine().trim();
+        }
+
+        for (int row = 0; row < length; row++) {
+            for (int col = 0; col < width; col++) {
+                int currentNode = row * width + col;
+                char currentChar = horizontal[row * 2].charAt(col * 2);
+
+                if (currentChar == 's') {
+                    entrance = graph.getNode(currentNode);
+                } else if (currentChar == 'x') {
+                    exit = graph.getNode(currentNode);
+                }
+
+                if (col < width - 1) {
+                    char rightChar = horizontal[row * 2].charAt(col * 2 + 1);
+                    insertEdge(currentNode, currentNode + 1, rightChar);
+                }
+                if (row < length - 1) {
+                    char downChar = horizontal[row * 2 + 1].charAt(col * 2);
+                    insertEdge(currentNode, currentNode + width, downChar);
+                }
+            }
+        }
+    }
+
+    private void insertEdge(int node1, int node2, char typeChar) throws GraphException {
+        String label;
+        int type;
+
+        switch (typeChar) {
+            case 'c':
+                label = "corridor";
+                type = 0;
+                break;
+            case 'w':
+                return; // No edge for walls
+            default:
+                label = "door";
+                type = Character.getNumericValue(typeChar);
+                break;
+        }
+
+        graph.insertEdge(graph.getNode(node1), graph.getNode(node2), type, label);
     }
 }

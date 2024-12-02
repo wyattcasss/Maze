@@ -1,14 +1,12 @@
+//Author Wyatt Cassiotis 251369984
+//In this file we create, modify and get nodes
 public class GraphNode {
-
-    // Variables for the node's name and mark
-    private int name;        // The name of the node
-    private boolean marked;  // Whether the node is marked or not
+    private int name;        
+    private boolean marked; 
 
     /**
-     * Constructor for GraphNode.
-     * Initializes the node with the given name.
-     *
-     * @param name The name of the node.
+     * Constructor method that initializes the node with the given name
+     * @param name The name of the node
      */
     public GraphNode(int name) {
         this.name = name;  // Assign the name
@@ -16,27 +14,24 @@ public class GraphNode {
     }
 
     /**
-     * Sets the marked value for the node.
-     *
-     * @param mark The value to set (true or false).
+     * Sets the value of the node
+     * @param mark The value to set either true or false
      */
     public void mark(boolean mark) {
         this.marked = mark;
     }
 
     /**
-     * Returns whether the node is marked.
-     *
-     * @return The marked value (true or false).
+     * Checks wether marked or not
+     * @return The marked value true or false
      */
     public boolean isMarked() {
         return this.marked;
     }
 
     /**
-     * Returns the name of the node.
-     *
-     * @return The name of the node.
+     * Getter method that gets the name of the node
+     * @return The name of the node
      */
     public int getName() {
         return this.name;

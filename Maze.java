@@ -1,9 +1,9 @@
+//Author Wyatt Cassiotis 251369984
+//In this file we read maze input files then solve the given maze given the input file
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Stack;
 
 public class Maze {
@@ -11,7 +11,11 @@ public class Maze {
     private GraphNode entrance;
     private GraphNode exit;
     private int coins;
-
+	/**
+	 * creates a maze object from the specified input file
+	 * @param inputFile Given file that contains the config of the maze
+	 * @throws MazeException If there is an error reading the file or making the maze
+	 */
     public Maze(String inputFile) throws MazeException {
         try (BufferedReader reader = new BufferedReader(new FileReader(inputFile))) {
             readInput(reader);
@@ -19,14 +23,21 @@ public class Maze {
             throw new MazeException("Error reading input file: " + e.getMessage());
         }
     }
-
+	/**
+	 * Getter method to retrive the graph
+	 * @return The graph that repersents the maze
+	 * @throws MazeException If the graph hasnt been made yet
+	 */
     public Graph getGraph() throws MazeException {
         if (graph == null) {
             throw new MazeException("Graph is not initialized.");
         }
         return graph;
     }
-
+	
+	/**
+	 * Solves the maze from the entrance node and attempts to reach the coin node.
+	 */
     public Iterator<GraphNode> solve() {
         try {
             return DFS(coins, entrance, new Stack<>());
@@ -34,7 +45,9 @@ public class Maze {
             return null;
         }
     }
-
+	/**
+	 * Helper function to help solve the maze from the entrance node and attempts to reach the coin node.
+	 */
     private Iterator<GraphNode> DFS(int remainingCoins, GraphNode current, Stack<GraphNode> path) throws GraphException {
         path.push(current);
         current.mark(true);
@@ -65,7 +78,7 @@ public class Maze {
         current.mark(false);
         return null;
     }
-
+    //Helper method that helps read inputs
     private void readInput(BufferedReader reader) throws IOException, GraphException {
         int scaleFactor = Integer.parseInt(reader.readLine().trim());
         int width = Integer.parseInt(reader.readLine().trim());
@@ -101,7 +114,7 @@ public class Maze {
             }
         }
     }
-
+	//Helper method to help insert edges
     private void insertEdge(int node1, int node2, char typeChar) throws GraphException {
         String label;
         int type;
